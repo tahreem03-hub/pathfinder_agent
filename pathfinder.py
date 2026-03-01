@@ -74,3 +74,74 @@ def search(g,algo,heur):
                     cid+=1; pq.put((n.f,cid,n)); in_pq.add(n)
                     if n!=g.goal: n.color=Y
     return None,nodes,0,(time.time()-start)*1000
+def main():
+    r=int(input("Rows (5-20): "))
+    c=int(input("Cols (5-25): "))
+    d=float(input("Density (0-1): "))
+    a=input("Algo? (1=A*,2=G): ")
+    a="a" if a=="1" else "g"
+    hh=input("Heur? (1=Man,2=Euc): ")
+    hh="m" if hh=="1" else "e"
+    
+    g=Grid(r,c)
+    for row in g.data:
+        for cell in row:
+            if cell!=g.start and cell!=g.goal and random.random()<d:
+                cell.wall=True
+    
+    dyn=False; path=None; nodes=0; cost=0; t=0; run=True
+    while run:
+        for e in pygame.event.get():
+            if e.type==pygame.QUIT: run=False
+            elif e.type==pygame.MOUSEBUTTONDOWN:
+                x,y=pygame.mouse.get_pos()
+                cx,cy=x//40,y//40
+                cell=g.get(cy,cx)
+                if cell and cell!=g.start and cell!=g.goal:
+                    if e.button==1: cell.wall=True; path=None
+                    elif e.button==3: cell.wall=False; path=None
+            elif e.type==pygame.KEYDOWN:
+                if e.key==pygame.K_r:
+                    for row in g.data:
+                        for cell in row:
+                            if cell!=g.start and cell!=g.goal:
+                                cell.wall=random.random()<d
+                    path=None
+                elif e.key==pygame.K_c:
+                    for row in g.data:
+                        for cell in row:
+                            if cell!=g.start and cell!=g.goal: cell.wall=False
+                    path=None
+                elif e.key==pygame.K_SPACE:
+                    path,nodes,cost,t=search(g,a,hh)
+                elif e.key==pygame.K_d: dyn=not dyn
+        
+        if dyn and random.random()<0.005:
+            rr,cc=random.randint(0,r-1),random.randint(0,c-1)
+            cell=g.get(rr,cc)
+            if cell and cell!=g.start and cell!=g.goal:
+                cell.wall=True
+                if path:
+                    for p in path:
+                        if p.wall: path,nodes,cost,t=search(g,a,hh); break
+        
+        screen.fill(W)
+        for row in g.data:
+            for cell in row:
+                if cell.wall: pygame.draw.rect(screen,B,(cell.x,cell.y,38,38))
+                else: pygame.draw.rect(screen,cell.color,(cell.x,cell.y,38,38))
+                pygame.draw.rect(screen,(200,200,200),(cell.x,cell.y,38,38),1)
+        
+        y=10
+        algo_name="A*" if a=="a" else "Greedy"
+        heur_name="Man" if hh=="m" else "Euc"
+        for txt in [f"Algo:{algo_name}",f"Heur:{heur_name}",f"Den:{d}",f"Dyn:{dyn}",
+                    f"Nodes:{nodes}",f"Cost:{cost}",f"Time:{t:.0f}ms",
+                    "","L:add","R:remove","R:rand","C:clear","Space:run","D:dyn"]:
+            screen.blit(font.render(txt,True,B),(620,y)); y+=20
+        pygame.display.flip()
+    
+    pygame.quit()
+
+if __name__=="__main__":
+    main()
