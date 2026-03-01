@@ -36,3 +36,41 @@ class Grid:
             n=self.get(cell.r+dr,cell.c+dc)
             if n and not n.wall: out.append(n)
         return out
+def h(cell,goal,t):
+    d=abs(cell.r-goal.r)+abs(cell.c-goal.c)
+    return d if t=="m" else math.sqrt((cell.r-goal.r)**2+(cell.c-goal.c)**2)
+
+def search(g,algo,heur):
+    start=time.time()
+    nodes=0
+    for row in g.data:
+        for c in row:
+            if c!=g.start and c!=g.goal and not c.wall: c.color=W
+            c.g=999999; c.f=999999; c.parent=None
+    g.start.g=0
+    g.start.f=g.start.g+h(g.start,g.goal,heur) if algo=="a" else h(g.start,g.goal,heur)
+    pq=PriorityQueue()
+    cid=0
+    pq.put((g.start.f,cid,g.start))
+    in_pq={g.start}
+    while not pq.empty():
+        cur=pq.get()[2]
+        in_pq.remove(cur)
+        if cur!=g.start and cur!=g.goal: cur.color=R
+        nodes+=1
+        if cur==g.goal:
+            path=[]
+            while cur: path.append(cur); cur=cur.parent
+            path.reverse()
+            for c in path:
+                if c!=g.start and c!=g.goal: c.color=G
+            return path,nodes,g.goal.g,(time.time()-start)*1000
+        for n in g.neigh(cur):
+            ng=cur.g+1
+            if ng<n.g:
+                n.parent=cur; n.g=ng
+                n.f=n.g+h(n,g.goal,heur) if algo=="a" else h(n,g.goal,heur)
+                if n not in in_pq:
+                    cid+=1; pq.put((n.f,cid,n)); in_pq.add(n)
+                    if n!=g.goal: n.color=Y
+    return None,nodes,0,(time.time()-start)*1000
